@@ -1,0 +1,21 @@
+.App {
+  text-align: center;
+  background-color: #fff;
+}
+
+.App-header {
+  background-color: #fff;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: #cac3e9;
+}
+
+/* Dark Color - #6771ad */
+
+.App-link {
+  color: #8c86c4;
+}
