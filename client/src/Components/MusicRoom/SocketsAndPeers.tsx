@@ -20,7 +20,7 @@ export default function SocketsAndPeers({localStream, handleVideoListAdd, handle
     console.log('init sockets and peers');
     socket.on('connect', () => {
       console.log('I AM ', socket.id);
-      socket.emit('subscribe', { room: 'aivxRoom', socketId: socket.id });
+      socket.emit('subscribe', { room: 'default', socketId: socket.id });
     });
   
     socket.on('initReceive', socket_id => {

@@ -17,14 +17,13 @@ import ChevronRight from '@material-ui/icons/ChevronRight';
 import IconButton from '@material-ui/core/IconButton';
 import SettingsIcon from '@material-ui/icons/Settings';
 import GraphicEq from '@material-ui/icons/GraphicEq';
-//import GraphicEq from '@material-ui/icons/GraphicEq';
 import Slider from '@material-ui/core/Slider';
 import SocketsAndPeers from './SocketsAndPeers';
 import { USER_MEDIA_CONSTRAINTS, REVERB_PRESET_LIST } from './constants';
-import Jungle from './jungle.js';
-import Reverb from './reverb.js';
-import Equalizer from './eq.js';
-import Compressor from './compressor.js';
+import Jungle from './webAudio/jungle.js';
+import Reverb from './webAudio/reverb.js';
+import Equalizer from './webAudio/equalizer.js';
+import Compressor from './webAudio/compressor.js';
 import VideoCard from './VideoCard';
 import './VideoChat.css';
 import { mixAudioTracks } from './audioUtils.ts';
@@ -98,7 +97,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function VideoChatEffects() {
+export default function MusicRoom() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   
   const classes = useStyles();
@@ -126,29 +125,19 @@ export default function VideoChatEffects() {
   const [samples, setSamples] = useState(false);
   const [samplesGainValue, setSamplesGainValue] = useState(0);
 
-  const [compressorWetGain, setCompressorWetGain] = useState(0.5);
-  const [compressorDryGain, setCompressorDryGain] = useState(0.5);
+  const [compressorGain, setCompressorGain] = useState(1.0);
   const [compressorThreshold, setCompressorThreshold] = useState(-50);
   const [compressorKnee, setCompressorKnee] = useState(40);
   const [compressorRatio, setCompressorRatio] = useState(12);
   const [compressorAttack, setCompressorAttack] = useState(0.003);
   const [compressorRelease, setCompressorRelease] = useState(0.25);
-  const [lowEQGain, setLowEQGain] = useState(0);
-  const [lowMidEQGain, setLowMidEQGain] = useState(0);
-  const [midEQGain, setMidEQGain] = useState(0);
-  const [highMidEQGain, setHighMidEQGain] = useState(0);
-  const [highEQGain, setHighEQGain] = useState(0);
-  const [highEQFilter, setHighEQFilter] = useState(0);
+
+  const [eqGain, setEqGain] = useState(1.0);
   const [lowEQSlider, setLowEQSlider] = useState(0);
   const [lowMidEQSlider, setLowMidEQSlider] = useState(0);
   const [midEQSlider, setMidEQSlider] = useState(0);
   const [highMidEQSlider, setHighMidEQSlider] = useState(0);
   const [highEQSlider, setHighEQSlider] = useState(0);
-
-      //lowEQFilter: null,
-      //lowMidEQFilter: null,
-      //midEQFilter: null,
-      //highMidEQFilter: null,
 
   let input = useRef(null);
   let equalizer = useRef(null);
@@ -273,8 +262,7 @@ export default function VideoChatEffects() {
         eqToCompressorPassthrough.current.disconnect(compressorToPitchshiftPassthrough.current);
         eqToCompressorPassthrough.current.connect(compressor.current.input);
         compressor.current.output.connect(compressorToPitchshiftPassthrough.current);
-        compressor.current.setCompressorWetGain(compressorWetGain);
-        compressor.current.setCompressorDryGain(compressorDryGain);
+        compressor.current.setCompressorGain(compressorGain);
       }
       else {
         eqToCompressorPassthrough.current.disconnect(compressor.current.input);
@@ -357,16 +345,44 @@ export default function VideoChatEffects() {
   }, [pitchShiftDryGain]);
 
   useEffect(() => {
-    if(compressor.current){
-      compressor.current.setCompressorWetGain(compressorWetGain);
+    if(equalizer.current){
+      equalizer.current.setEqGain(eqGain);
     }
-  }, [compressorWetGain]);
+  }, [eqGain]);
+
+  useEffect(() => {
+    if(equalizer.current){
+      equalizer.current.changeHighEQ(highEQSlider);
+    }
+  }, [highEQSlider]);
+  useEffect(() => {
+    if(equalizer.current){
+      equalizer.current.changeHighMidEQ(highMidEQSlider);
+    }
+  }, [highMidEQSlider]);
+  useEffect(() => {
+    if(equalizer.current){
+      equalizer.current.changeMidEQ(midEQSlider);
+    }
+  }, [midEQSlider]);
+  useEffect(() => {
+    if(equalizer.current){
+      equalizer.current.changeLowMidEQ(lowMidEQSlider);
+    }
+  }, [lowMidEQSlider]);
+  useEffect(() => {
+    if(equalizer.current){
+      equalizer.current.changeLowEQ(lowEQSlider);
+    }
+  }, [lowEQSlider]);
+
 
   useEffect(() => {
     if(compressor.current){
-      compressor.current.setCompressorDryGain(compressorDryGain);
+      compressor.current.setCompressorGain(compressorGain);
     }
-  }, [compressorDryGain]);
+  }, [compressorGain]);
+
 
   useEffect(() => {
     if(compressor.current){
@@ -397,18 +413,6 @@ export default function VideoChatEffects() {
       compressor.current.setCompressorRelease(compressorRelease);
     }
   }, [compressorRelease]);
-
-  useEffect(() => {
-    if(compressor.current){
-      compressor.current.setCompressorDryGain(compressorDryGain);
-    }
-  }, [compressorDryGain]);
-
-  useEffect(() => {
-    if(compressor.current){
-      compressor.current.setCompressorDryGain(compressorDryGain);
-    }
-  }, [compressorDryGain]);
 
   useEffect(() => {
     if(samplesGain.current){
@@ -557,13 +561,36 @@ export default function VideoChatEffects() {
     setEq(event.target.checked);
   };
 
+  const handleEqGain = (event: any, newValue: number | number[]) => {
+    setEqGain(newValue as number);
+  };
+
+  const handleHighEQ = (event: any, newValue: number | number[]) => {
+    setHighEQSlider(newValue as number);
+  };
+
+  const handleLowMidEQ = (event: any, newValue: number | number[]) => {
+    setLowMidEQSlider(newValue as number);
+  };
+
+  const handleMidEQ  = (event: any, newValue: number | number[]) => {
+    setMidEQSlider(newValue as number);
+  };
+
+  const handleHighMidEQ = (event: any, newValue: number | number[]) => {
+    setHighMidEQSlider(newValue as number);
+  };
+
+  const handleLowEQ = (event: any, newValue: number | number[]) => {
+    setLowEQSlider(newValue as number);
+  };
+
   const handleCompCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
     setComp(event.target.checked);
   };
 
   const handleCompressorGainChange = (event: any, newValue: number | number[]) => {
-    setCompressorWetGain(newValue as number);
-    setCompressorDryGain(1 - newValue as number);
+    setCompressorGain(newValue as number);
   };
 
   const handleCompressorThresholdChange = (event: any, newValue: number | number[]) => {
@@ -610,13 +637,6 @@ export default function VideoChatEffects() {
           [classes.contentShift]: open,
         })}
       >
-        <Typography variant="h2"
-          fontWeight='100'
-          color="primary"
-          align="center"
-          className={classes.title}>
-          Video Chat
-        </Typography>
         <Grid container spacing={3}>
           {createVideos()}
         </Grid>
@@ -676,19 +696,84 @@ export default function VideoChatEffects() {
         </FormGroup> 
         { eq && 
           <div>
-            <Typography id="eq" gutterBottom>
-              EQ
+            <Typography id="highEq" gutterBottom>
+              High
             </Typography>
             <Slider 
-            className={classes.slider}
+              className={classes.slider}
               padding={3} 
-              value={pitchOffsetAmount} 
-              onChange={handlePitchOffsetChange} 
-              min={-1.5} 
-              max={1.5} 
-              step={0.01}
-              aria-labelledby="eq"
+              value={highEQSlider} 
+              onChange={handleHighEQ} 
+              min={-40} 
+              max={40} 
+              step={0.1}
+              aria-labelledby="highEq"
             /> 
+            <Typography id="highMidEq" gutterBottom>
+              High-Mid
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={highMidEQSlider} 
+              onChange={handleHighMidEQ} 
+              min={-40} 
+              max={40} 
+              step={0.1}
+              aria-labelledby="highMidEq"
+            /> 
+            <Typography id="midEq" gutterBottom>
+              Mid
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={midEQSlider} 
+              onChange={handleMidEQ} 
+              min={-40} 
+              max={40} 
+              step={0.1}
+              aria-labelledby="midEq"
+            /> 
+            <Typography id="lowMidEq" gutterBottom>
+              Low-Mid
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={lowMidEQSlider} 
+              onChange={handleLowMidEQ} 
+              min={-40} 
+              max={40} 
+              step={0.1}
+              aria-labelledby="lowMidEq"
+            /> 
+            <Typography id="lowEq" gutterBottom>
+              Low
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={lowEQSlider} 
+              onChange={handleLowEQ} 
+              min={-40} 
+              max={40} 
+              step={0.1}
+              aria-labelledby="lowEq"
+            /> 
+            <Typography id="eqGain" gutterBottom>
+              Gain
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={eqGain} 
+              onChange={handleEqGain} 
+              min={0} 
+              max={1.0} 
+              step={0.00001}
+              aria-labelledby="eqGain"
+            />
           </div>
         }
         <FormGroup row>
@@ -705,19 +790,6 @@ export default function VideoChatEffects() {
         </FormGroup> 
         { comp && 
           <div>
-            <Typography id="compressorGain" gutterBottom>
-              Dry - Wet
-            </Typography>
-            <Slider 
-              className={classes.slider}
-              padding={3} 
-              value={compressorWetGain} 
-              onChange={handleCompressorGainChange} 
-              min={0} 
-              max={1.0} 
-              step={0.00001}
-              aria-labelledby="compressorGain"
-            />
             <Typography id="compressorThreshold" gutterBottom>
               Threshold
             </Typography>
@@ -783,6 +855,19 @@ export default function VideoChatEffects() {
               step={0.00001}
               aria-labelledby="compressorRelease"
             />  
+            <Typography id="compressorGain" gutterBottom>
+              Gain
+            </Typography>
+            <Slider 
+              className={classes.slider}
+              padding={3} 
+              value={compressorGain} 
+              onChange={handleCompressorGainChange} 
+              min={0} 
+              max={1.0} 
+              step={0.00001}
+              aria-labelledby="compressorGain"
+            />
           </div>
         }
         <FormGroup row>

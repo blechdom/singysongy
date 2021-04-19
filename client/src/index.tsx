@@ -14,21 +14,26 @@ const theme = createMuiTheme({
       default: "#FFFFFF"
     },
     primary: {
-      main: "#cac3e9" // This is an orange looking color
+      dark: "#a80050",
+      main: "#e0007c",
+      light: "#ff56ab",
+      contrastText: '#fff',
     },
     secondary: {
-      main: "#6771ad" //Another orange-ish color
+      dark: "#009f75",
+      main: "#11d1a4",
+      light: "#64ffd5",
+      contrastText: '#000',
     },
     text: {
-      primary: "#8c86c4",
-      secondary: "#6771ad"
+      primary: "#e0007c",
+      secondary: "#11d1a4"
     } 
   },
   typography: {
     fontFamily: 'Roboto',
   },
-  // even darker: #6771ad
-  fontFamily: 'Roboto', // as an aside, highly recommend importing roboto font for Material UI projects! Looks really nice
+  fontFamily: 'Roboto',
 });
 
 ReactDOM.render(

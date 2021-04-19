@@ -13,7 +13,7 @@ import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 
 import Home from "../Home/Home";
-import VideoChatEffects from "../VideoChatEffects/VideoChatEffects";
+import MusicRoom from "../MusicRoom/MusicRoom";
 import '../App/App.css';
 
 const drawerWidth = 240;
@@ -88,14 +88,14 @@ function ToolBarInteraction({ classes, variant }) {
             <ListItem button component={Link} to="/" onClick={onItemClick('Home')}>
               <ListItemText>Home</ListItemText>
             </ListItem>
-            <ListItem button component={Link} to="/videoChatEffects" onClick={onItemClick('Singy Songy Default Room')}>
+            <ListItem button component={Link} to="/musicRoom" onClick={onItemClick('Singy Songy Default Room')}>
               <ListItemText>Singy Songy Default Room</ListItemText>
             </ListItem>
           </List>
         </Drawer>
         <main className={classes.content}>
             <Route exact path="/" component={Home} />
-            <Route path="/videoChatEffects" component={VideoChatEffects} />
+            <Route path="/musicRoom" component={MusicRoom} />
         </main>
       </Router>
     </div>

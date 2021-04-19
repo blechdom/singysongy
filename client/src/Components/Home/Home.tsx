@@ -35,7 +35,7 @@ export default function Home() {
           SingySongy
         </h1>
         <List component="nav" className={classes.root} aria-label="contacts">
-          <ListItem button component={Link} to="/videoChatEffects">
+          <ListItem button component={Link} to="/musicRoom">
             <ListItemText secondary="Default Singy Songy Room - USE HEADPHONES!" />
           </ListItem>
         </List>

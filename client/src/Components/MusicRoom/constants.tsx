@@ -29,7 +29,7 @@ export const USER_MEDIA_CONSTRAINTS = {
   }
 }
 
-export const SOCKET_URL = 'https://singysongy.com';
+export const SOCKET_URL = 'https://www.singysongy.com';
 
 export const REVERB_PRESET_LIST = [
   '1ow40',        

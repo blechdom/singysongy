@@ -10,23 +10,16 @@ export default function Compressor(context) {
     const compressorGain = context.createGain();
     this.compressor_gain = compressorGain;
     this.compressor_gain.gain.value = 0.5;
-    const dryCompressorGain = context.createGain();
-    this.dry_compressor_gain = dryCompressorGain;
-    this.dry_compressor_gain.gain.value = 0.5;
+
     let compressor = context.createDynamicsCompressor();
     this.compressor_node = compressor;
 
-    input.connect(dryCompressorGain);
     input.connect(compressor);
-    dryCompressorGain.connect(output);
+    compressor.connect(compressorGain);
     compressorGain.connect(output);
 }
 
-Compressor.prototype.setCompressorDryGain = function(gainValue) {
-    this.dry_compressor_gain.gain.value = gainValue;
-}
-
-Compressor.prototype.setCompressorWetGain = function(gainValue) {
+Compressor.prototype.setCompressorGain = function(gainValue) {
     this.compressor_gain.gain.value = gainValue;
 }
 
