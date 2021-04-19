@@ -40,7 +40,7 @@ function createFadeBuffer(context, activeTime, fadeTime) {
     var fadeIndex2 = length1 - fadeLength;
 
     // 1st part of cycle
-    for (var i = 0; i < length1; ++i) {
+    for (let i = 0; i < length1; ++i) {
         var value;
 
         if (i < fadeIndex1) {
@@ -55,7 +55,7 @@ function createFadeBuffer(context, activeTime, fadeTime) {
     }
 
     // 2nd part
-    for (var i = length1; i < length; ++i) {
+    for (let i = length1; i < length; ++i) {
         p[i] = 0;
     }
 
@@ -81,7 +81,7 @@ function createDelayTimeBuffer(context, activeTime, fadeTime, shiftUp) {
     }
 
     // 2nd part
-    for (var i = length1; i < length; ++i) {
+    for (let i = length1; i < length; ++i) {
         p[i] = 0;
     }
 
@@ -213,8 +213,6 @@ Jungle.prototype.setDelay = function(delayTime) {
     this.modGain2.gain.setTargetAtTime(0.5*delayTime, 0, 0.010);
 }
 
-var previousPitch = -1;
-
 Jungle.prototype.setPitchOffset = function(mult) {
         if (mult>0) { // pitch up
             this.mod1Gain.gain.value = 0;
@@ -228,7 +226,6 @@ Jungle.prototype.setPitchOffset = function(mult) {
             this.mod4Gain.gain.value = 0;
         }
         this.setDelay(delayTime*Math.abs(mult));
-    previousPitch = mult;
 }
 
 Jungle.prototype.setJungleDryGain = function(gainValue) {
