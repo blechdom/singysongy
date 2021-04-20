@@ -26,9 +26,14 @@ module.exports = (io) => {
             socket.to( init_socket_id ).emit( 'initSend', socket.id );
         })
 
+        socket.on('chat', data => {
+            console.log('chat received ', data);
+            socket.to( data.room ).emit( 'chat', {sender: data.sender, msg: data.msg});
+        })
+
         socket.on('disconnect', () => {
             console.log('socket disconnected ' + socket.id);
             socket.broadcast.emit('removePeer', socket.id);
-        })
+        });
     })
 }
