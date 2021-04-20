@@ -12,6 +12,7 @@ import Typography from '@material-ui/core/Typography';
 import Drawer from '@material-ui/core/Drawer';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import IconButton from '@material-ui/core/IconButton';
+import {sendMessage} from './SocketsAndPeers';
 
 const drawerWidth = 350;
 
@@ -41,8 +42,18 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function CommsDrawer({ commsOpen, handleCommsDrawerClose }) {
+export default function CommsDrawer({ commsOpen, handleCommsDrawerClose, chatMessage }) {
   const classes = useStyles();
+
+  useEffect(() => {
+    if(chatMessage){
+      console.log('in comms drawer receiving chat ', chatMessage);
+    }
+  }, [chatMessage]);
+
+  function sendChatMessage() {
+    sendMessage({ msg:'hi this is a test', isLocal: true});
+  }
 
   return(
     <div > 
@@ -64,8 +75,11 @@ export default function CommsDrawer({ commsOpen, handleCommsDrawerClose }) {
         <Divider />
         <div className={classes.drawerBody}>
         more stuff to come
+        <Button onClick={sendChatMessage}>
+          Send Test Message
+        </Button>
         </div>
-        </Drawer>
+      </Drawer>
     </div>
   );
 }

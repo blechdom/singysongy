@@ -58,7 +58,8 @@ export default function AudioFXDrawer({
   audioCtx, 
   stream, 
   updateLocalStreamAudio, 
-  handleAudioFXDrawerClose 
+  handleAudioFXDrawerClose, 
+  remoteGain
 }) {
   const classes = useStyles();
   const [monitor, setMonitor] = React.useState<boolean>(false);
@@ -101,6 +102,7 @@ export default function AudioFXDrawer({
   let reverberator = useRef(null);
   let samplesGain = useRef(null);
   let samplesDestination = useRef(null);
+  let remoteAudioGain = useRef(null);
   let remoteAudioDestination = useRef(null);
   let localOutputVolume = useRef(null);
   let eqToCompressorPassthrough = useRef(null);
@@ -111,6 +113,8 @@ export default function AudioFXDrawer({
     if(audioCtx !== null){
       samplesDestination.current = audioCtx.createMediaStreamDestination();
       remoteAudioDestination.current = audioCtx.createMediaStreamDestination();
+      remoteAudioGain.current = audioCtx.createGain();
+      remoteAudioGain.current.gain.value = remoteGain;
       localOutputVolume.current = audioCtx.createGain();
       localOutputVolume.current.gain.value = monitorGain;
       eqToCompressorPassthrough.current = audioCtx.createGain();
@@ -120,37 +124,42 @@ export default function AudioFXDrawer({
       samplesGain.current.gain.value = samplesGainValue;
       samplesGain.current.connect(samplesDestination.current);
       samplesGain.current.connect(localOutputVolume.current);
+      remoteAudioGain.current.connect(remoteAudioDestination.current);
 
       initSamples();
 
+      input.current = audioCtx.createMediaStreamSource(stream);
+
+      input.current.connect(eqToCompressorPassthrough.current);
+      eqToCompressorPassthrough.current.connect(compressorToPitchshiftPassthrough.current);
+      compressorToPitchshiftPassthrough.current.connect(pitchshiftToReverbPassthrough.current);
+      pitchshiftToReverbPassthrough.current.connect(remoteAudioGain.current);
+      pitchshiftToReverbPassthrough.current.connect(localOutputVolume.current);
+
+      equalizer.current =  new Equalizer(audioCtx);
+      compressor.current = new Compressor(audioCtx);
       
-    
-    input.current = audioCtx.createMediaStreamSource(stream);
+      pitchShifter.current =  new Jungle(audioCtx);
+      pitchShifter.current.setPitchOffset(pitchOffsetAmount);
 
-    input.current.connect(eqToCompressorPassthrough.current);
-    eqToCompressorPassthrough.current.connect(compressorToPitchshiftPassthrough.current);
-    compressorToPitchshiftPassthrough.current.connect(pitchshiftToReverbPassthrough.current);
-    pitchshiftToReverbPassthrough.current.connect(remoteAudioDestination.current);
-    pitchshiftToReverbPassthrough.current.connect(localOutputVolume.current);
+      reverberator.current =  new Reverb(audioCtx, 'MediumHall');
+      reverberator.current.setReverbPreset(reverbPreset);
+      reverberator.current.setReverbDryGain(reverbDryGain);
+      reverberator.current.setReverbWetGain(reverbWetGain);
 
-    equalizer.current =  new Equalizer(audioCtx);
-    compressor.current = new Compressor(audioCtx);
-    
-    pitchShifter.current =  new Jungle(audioCtx);
-    pitchShifter.current.setPitchOffset(pitchOffsetAmount);
-
-    reverberator.current =  new Reverb(audioCtx, 'MediumHall');
-    reverberator.current.setReverbPreset(reverbPreset);
-    reverberator.current.setReverbDryGain(reverbDryGain);
-    reverberator.current.setReverbWetGain(reverbWetGain);
-
-    var originalTrack = stream.getAudioTracks()[0];
-    stream.removeTrack(originalTrack);
-    var mixedTrack = mixAudioTracks(audioCtx, samplesDestination.current.stream, remoteAudioDestination.current.stream);
-    stream.addTrack(mixedTrack);
-    updateLocalStreamAudio(stream);
+      var originalTrack = stream.getAudioTracks()[0];
+      stream.removeTrack(originalTrack);
+      var mixedTrack = mixAudioTracks(audioCtx, samplesDestination.current.stream, remoteAudioDestination.current.stream);
+      stream.addTrack(mixedTrack);
+      updateLocalStreamAudio(stream);
     }
   }, [stream]);
+
+  useEffect(() => {
+    if(remoteAudioGain.current && remoteGain){
+      remoteAudioGain.current.gain.value = remoteGain;
+    }
+  }, [remoteGain]);
 
   useEffect(() => {
     if(localOutputVolume.current && monitorGain){
@@ -227,17 +236,17 @@ export default function AudioFXDrawer({
   useEffect(() => {
     if (reverberator.current){
       if(reverb) {
-        pitchshiftToReverbPassthrough.current.disconnect(remoteAudioDestination.current);
+        pitchshiftToReverbPassthrough.current.disconnect(remoteAudioGain.current);
         pitchshiftToReverbPassthrough.current.disconnect(localOutputVolume.current);
         pitchshiftToReverbPassthrough.current.connect(reverberator.current.input);
-        reverberator.current.output.connect(remoteAudioDestination.current);
+        reverberator.current.output.connect(remoteAudioGain.current);
         reverberator.current.output.connect(localOutputVolume.current);
       }
       else {
         pitchshiftToReverbPassthrough.current.disconnect(reverberator.current.input);
-        reverberator.current.output.disconnect(remoteAudioDestination.current);
+        reverberator.current.output.disconnect(remoteAudioGain.current);
         reverberator.current.output.disconnect(localOutputVolume.current);
-        pitchshiftToReverbPassthrough.current.connect(remoteAudioDestination.current);
+        pitchshiftToReverbPassthrough.current.connect(remoteAudioGain.current);
         pitchshiftToReverbPassthrough.current.connect(localOutputVolume.current);
       }
     }

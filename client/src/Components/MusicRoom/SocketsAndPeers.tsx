@@ -3,10 +3,12 @@ import io from 'socket.io-client';
 import SimplePeer from 'simple-peer';
 import { ICE_CONFIGURATION, SOCKET_URL } from './constants';
 
-export default function SocketsAndPeers({localStream, handleVideoListAdd, handleVideoListRemove}) {
+let thisSocket = null;
+
+export default function SocketsAndPeers({localStream, handleVideoListAdd, handleVideoListRemove, addChat}) {
   
   const socket = io(SOCKET_URL);
-  
+  thisSocket = socket;
   const peers = {};
   useEffect(() => {
     initSockets();
@@ -36,6 +38,11 @@ export default function SocketsAndPeers({localStream, handleVideoListAdd, handle
     socket.on('signal', data => {
       peers[data.socket_id].signal(data.signal)
     });
+
+		socket.on('chat', data => {
+			console.log('chat revieved on client', data);
+			addChat(data, false);
+		});
   
     socket.on('removePeer', socket_id => {
       console.log('removing peer ' + socket_id);
@@ -84,3 +91,16 @@ export default function SocketsAndPeers({localStream, handleVideoListAdd, handle
   return <div></div>;
       
 }
+
+export const sendMessage = function(msg){
+  if (thisSocket != null){
+    console.log('sending chat ', msg);
+    let data = {
+			room: 'default',
+			msg: msg,
+			sender: 'test'
+    };
+		console.log('sending chat ', data);
+    thisSocket.emit('chat', data);
+  }
+};

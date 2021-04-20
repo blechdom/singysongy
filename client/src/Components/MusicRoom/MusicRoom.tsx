@@ -11,7 +11,7 @@ import { USER_MEDIA_CONSTRAINTS } from './constants';
 import VideoCard from './VideoCard';
 import AudioFXDrawer from './AudioFXDrawer';
 import CommsDrawer from './CommsDrawer';
-import './VideoChat.css';
+import PeersAudio from './webAudio/peersAudio.js';
 
 const drawerWidth = 350;
 
@@ -69,9 +69,12 @@ export default function MusicRoom() {
   const [videoList, setVideoList] = React.useState([]);
   const [socketComponent, setSocketComponent] = React.useState([]);
   const [audioCtx, setAudioCtx] = useState(null);
+  const [chatMessage, setChatMessage] = useState(null);
+  const [remoteGain, setRemoteGain] = useState(1.0);
 
   let localStream = useRef(null);
   let mediaStream = useRef(null);
+  let peersAudio = useRef(null);
 
   useEffect(() => {
     if(audioCtx === null){
@@ -84,6 +87,8 @@ export default function MusicRoom() {
 
   useEffect(() => {
     if(audioCtx !== null){
+      
+      peersAudio.current = new PeersAudio(audioCtx);
 
       if ( userMediaAvailable() ) {
         navigator.mediaDevices.getUserMedia(USER_MEDIA_CONSTRAINTS).then(stream => {
@@ -117,7 +122,6 @@ export default function MusicRoom() {
   }
 
   function initSocketsAndPeers(){
-    console.log("setting sockets and peers ", localStream.current);
     setSocketComponent(
       <SocketsAndPeers 
         handleVideoListAdd={handleVideoListAdd} 
@@ -129,19 +133,39 @@ export default function MusicRoom() {
   }
 
   function handleVideoListAdd(videoProps) {
+    console.log('video props ', videoProps);
     setVideoList(oldArray => [...oldArray, videoProps]);
+    peersAudio.current.addPartner(videoProps.socketId, videoProps.src);
   }
 
   function handleVideoListRemove(socketId) {
     setVideoList(currentList => currentList.filter((remoteVid) => remoteVid.socketId !== socketId));
+    peersAudio.current.removePartner(socketId);
+  }
+
+  function updatePeersAudioVolume(socketId, gainVal) {
+    if(socketId === 'local'){
+      setRemoteGain(gainVal);
+    }
+    else{
+      console.log('update peers volume ', socketId, gainVal);
+      peersAudio.current.updatePartnerGain(socketId, gainVal);
+    }  
   }
 
   function addChat(data, isLocal) {
     console.log("chat received ", data, 'is local? ', isLocal);
+    setChatMessage({ msg: data, isLocal});
   }
 
   function createVideo(props, numberOfVideos) {
-    return <VideoCard srcObject={props.src} socketId={props.socketId} key={props.socketId} numberOfVideos={numberOfVideos} />;
+    return <VideoCard 
+            srcObject={props.src} 
+            socketId={props.socketId} 
+            key={props.socketId} 
+            numberOfVideos={numberOfVideos} 
+            updatePeersAudioVolume={updatePeersAudioVolume}
+          />;
   }
 
   function createVideos() {
@@ -202,10 +226,12 @@ export default function MusicRoom() {
           stream={mediaStream.current} 
           updateLocalStreamAudio={updateLocalStreamAudio} 
           handleAudioFXDrawerClose={handleAudioFXDrawerClose} 
+          remoteGain={remoteGain}
         />
         <CommsDrawer 
           commsOpen={commsOpen} 
           handleCommsDrawerClose={handleCommsDrawerClose} 
+          chatMessage={chatMessage}
         />
         {socketComponent}
     </div>
