@@ -36,11 +36,13 @@ const useStyles = makeStyles((theme) => ({
 			width: "100%",
 			zIndex: 9999,
 			display:'inline-block',
-    }
+    },
+		bottom: 5,
   },
 	video: {
 		width: '100%',
     height: 'auto',
+		bottom: 5,
 	},
   videoOverlay: {
 		position: 'absolute',
@@ -58,94 +60,96 @@ const useStyles = makeStyles((theme) => ({
 
 export default function VideoCard({srcObject, ...props }: PropsType) {
   const classes = useStyles();
-    const refVideo = useRef<HTMLVideoElement>(null);
+  const refVideo = useRef<HTMLVideoElement>(null);
 
-    //const [muted, setMuted] = useState(true);
-    const [mouseEnter, setMouseEnter] = useState(false);
-    const [isShowing, setIsShowing] = useState(false);
-		const [micOn, setMicOn] = useState(true);
-		const [camOn, setCamOn] = useState(true);
-		const [sliderVal, setSliderVal] = useState(1);
+  const [mouseEnter, setMouseEnter] = useState(false);
+  const [isShowing, setIsShowing] = useState(false);
+	const [micOn, setMicOn] = useState(true);
+	const [camOn, setCamOn] = useState(true);
+	const [sliderVal, setSliderVal] = useState(1);
 
-    useEffect(() => {
-      if (!refVideo.current) return
-      refVideo.current.srcObject = srcObject
-    }, [srcObject])
+	useEffect(() => {
+		if (!refVideo.current) return
+		refVideo.current.srcObject = srcObject
+	}, [srcObject])
 
-    /*useEffect(() => {
-      if(props.socketId === 'local'){
-        setMuted(true);
-      }
-    }, [props.socketId]);*/
+	useEffect(() => {
+		setIsShowing(mouseEnter);
+	}, [mouseEnter]);
 
-    useEffect(() => {
-      setIsShowing(mouseEnter);
-    }, [mouseEnter]);
+	useEffect(() => {
+		props.updatePeersAudioVolume(props.socketId, sliderVal);
+	}, [sliderVal]);
 
-		useEffect(() => {
-			props.updatePeersAudioVolume(props.socketId, sliderVal);
-		}, [sliderVal]);
-  
-    let sizes = [12, 6, 4, 3, 2];
-    if(props.numberOfVideos <=2){
-      sizes = [12, 6, 6, 6, 6];
-    }
-    else if(props.numberOfVideos<=3){
-      sizes = [6, 6, 4, 4, 4];
-    }
-    else if(props.numberOfVideos<=4){
-      sizes = [6, 6, 4, 3, 3];
-    }
-    else if(props.numberOfVideos<=6){
-      sizes = [6, 6, 4, 4, 2];
-    }
-    else if(props.numberOfVideos<=8){
-      sizes = [6, 4, 4, 2, 2];
-    }
-    else{
-      sizes = [4, 4, 3, 2, 2];
-    }
+	useEffect(() => {
+		props.updatePeersMute(props.socketId, micOn);
+	}, [micOn]);
 
-    function handleMouseEnter() {
-      setMouseEnter(true);
-    }
-    function handleMouseLeave() {
-      setMouseEnter(false);
-    }
+	let sizes = [12, 6, 4, 3, 2];
+	if(props.numberOfVideos <=2){
+		sizes = [12, 6, 6, 6, 6];
+	}
+	else if(props.numberOfVideos<=3){
+		sizes = [6, 6, 4, 4, 4];
+	}
+	else if(props.numberOfVideos<=4){
+		sizes = [6, 6, 4, 3, 3];
+	}
+	else if(props.numberOfVideos<=6){
+		sizes = [6, 6, 4, 4, 2];
+	}
+	else if(props.numberOfVideos<=8){
+		sizes = [6, 4, 4, 2, 2];
+	}
+	else{
+		sizes = [4, 4, 3, 2, 2];
+	}
 
-		function toggleMic() {
-			setMicOn(!micOn);
+	function handleMouseEnter() {
+		setMouseEnter(true);
+	}
+	function handleMouseLeave() {
+		setMouseEnter(false);
+	}
+
+	function toggleMic() {
+		setMicOn(!micOn);
+	}
+
+	function toggleCam() {
+		let newCam = !camOn;
+		setCamOn(newCam);
+		if(props.socketId === 'local'){
+			props.updateLocalCam(newCam);
 		}
+	}
 
-		function toggleCam() {
-			setCamOn(!camOn);
-		}
-		const handleSliderChange = (event: any, newValue: number | number[]) => {
-			setSliderVal(newValue as number);
-		};
+	const handleSliderChange = (event: any, newValue: number | number[]) => {
+		setSliderVal(newValue as number);
+	};
 
-    return (
-      <Grid item xs={sizes[0]} sm={sizes[1]} md={sizes[2]} lg={sizes[3]} xl={sizes[4]}>
-        <div className={classes.videoCard} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+	return (
+		<Grid item xs={sizes[0]} sm={sizes[1]} md={sizes[2]} lg={sizes[3]} xl={sizes[4]}>
+			<div className={classes.videoCard} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
 				<div className={classes.video}>
-          <video
-            ref={refVideo}
-            autoPlay={true}
-            width={'100%'}
-            muted={true}
-          />
-        </div>
+					<video
+						ref={refVideo}
+						autoPlay={true}
+						width={'100%'}
+						muted={true}
+					/>
+				</div>
 				{ mouseEnter && 
-          <div className={classes.videoOverlay}>
-            <Grid 
+					<div className={classes.videoOverlay}>
+						<Grid 
 							container 
 							className={classes.root} 
 							spacing={2} 
 							direction="row"
-  						justify="space-between"
-  						alignItems="center"
+							justify="space-between"
+							alignItems="center"
 						>
-        			<Grid item>
+							<Grid item>
 								<Typography align='center' variant='h5' className={classes.white}>{props.socketId}</Typography>
 							</Grid>
 						</Grid>
@@ -154,8 +158,8 @@ export default function VideoCard({srcObject, ...props }: PropsType) {
 							className={classes.root} 
 							spacing={2} 
 							direction="row"
-  						justify="space-between"
-  						alignItems="center"
+							justify="space-between"
+							alignItems="center"
 						>
 							<Grid item>
 								<Slider 
@@ -171,15 +175,16 @@ export default function VideoCard({srcObject, ...props }: PropsType) {
 								<IconButton aria-label="delete" color="primary" onClick={toggleMic}>
 									{ micOn ? <MicIcon style={{fill: "white"}}/> : <MicOffIcon style={{fill: "red"}}/> }
 								</IconButton>
-								<IconButton aria-label="delete" color="primary" onClick={toggleCam}>
-									{ camOn ? <VideocamIcon style={{fill: "white"}}/> : <VideocamOffIcon style={{fill: "red"}}/> }
-								</IconButton>
+								{ (props.socketId == 'local') && <IconButton aria-label="delete" color="primary" onClick={toggleCam}>
+										{ camOn ? <VideocamIcon style={{fill: "white"}}/> : <VideocamOffIcon style={{fill: "red"}}/> }
+									</IconButton>
+								}
 							</Grid>
 						</Grid>
-          </div>
+					</div>
 				}
-				</div>
-      </Grid>
+			</div>
+		</Grid>
     );
   }
   

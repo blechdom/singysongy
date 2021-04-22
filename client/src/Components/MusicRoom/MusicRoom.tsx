@@ -6,11 +6,14 @@ import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
 import ChatBubbleOutlineIcon from '@material-ui/icons/ChatBubbleOutline';
+import MusicNoteIcon from '@material-ui/icons/MusicNote';
+import LoopIcon from '@material-ui/icons/Loop';
 import SocketsAndPeers from './SocketsAndPeers';
 import { USER_MEDIA_CONSTRAINTS } from './constants';
 import VideoCard from './VideoCard';
 import AudioFXDrawer from './AudioFXDrawer';
 import CommsDrawer from './CommsDrawer';
+import LoopDrawer from './LoopDrawer';
 import PeersAudio from './webAudio/peersAudio.js';
 
 const drawerWidth = 350;
@@ -21,9 +24,14 @@ const useStyles = makeStyles((theme) => ({
     right: '20px',
     top: '10px', 
   },
-  commsButton: {
+  loopButton: {
     position: 'absolute',
     right: '60px',
+    top: '10px', 
+  },
+  commsButton: {
+    position: 'absolute',
+    right: '100px',
     top: '10px', 
   },
   title: {
@@ -66,11 +74,13 @@ export default function MusicRoom() {
 
   const [audioFXOpen, setAudioFXOpen] = React.useState<boolean>(false);
   const [commsOpen, setCommsOpen] = React.useState<boolean>(false);
+  const [loopOpen, setLoopOpen] = React.useState<boolean>(false);
   const [videoList, setVideoList] = React.useState([]);
   const [socketComponent, setSocketComponent] = React.useState([]);
   const [audioCtx, setAudioCtx] = useState(null);
   const [chatMessage, setChatMessage] = useState(null);
   const [remoteGain, setRemoteGain] = useState(1.0);
+  const [remoteMute, setRemoteMute] = useState(1);
 
   let localStream = useRef(null);
   let mediaStream = useRef(null);
@@ -87,21 +97,8 @@ export default function MusicRoom() {
 
   useEffect(() => {
     if(audioCtx !== null){
-      
       peersAudio.current = new PeersAudio(audioCtx);
-
-      if ( userMediaAvailable() ) {
-        navigator.mediaDevices.getUserMedia(USER_MEDIA_CONSTRAINTS).then(stream => {
-          if (stream) {
-            setVideoList(currentList => currentList.filter((remoteVid) => remoteVid.socketId !== 'local'));
-            const videoProps = {src: stream, socketId: 'local'};
-            setVideoList(oldArray => [...oldArray, videoProps]);
-          }
-          mediaStream.current = stream;
-          localStream.current = stream;
-          initSocketsAndPeers();
-        }).catch(e => alert(`getusermedia error ${e.name}`))
-      }
+      initMedia();
     }
     return () => { 
       if(localStream.current){
@@ -112,6 +109,21 @@ export default function MusicRoom() {
     };
     
   }, [audioCtx]);
+
+  function initMedia() {
+    if ( userMediaAvailable() ) {
+      navigator.mediaDevices.getUserMedia(USER_MEDIA_CONSTRAINTS).then(stream => {
+        if (stream) {
+          setVideoList(currentList => currentList.filter((remoteVid) => remoteVid.socketId !== 'local'));
+          const videoProps = {src: stream, socketId: 'local'};
+          setVideoList(oldArray => [...oldArray, videoProps]);
+        }
+        mediaStream.current = stream;
+        localStream.current = stream;
+        initSocketsAndPeers();
+      }).catch(e => alert(`getusermedia error ${e.name}`))
+    }
+  }
   
   function updateLocalStreamAudio(updatedAudioStream) {
     localStream.current = updatedAudioStream;
@@ -153,6 +165,23 @@ export default function MusicRoom() {
     }  
   }
 
+  function updatePeersMute(socketId, micOn) {
+    if(socketId === 'local'){
+      setRemoteMute(micOn ? 1 : 0);
+    }
+    else{
+      console.log('update peers Mute ', socketId, micOn);
+      peersAudio.current.updatePartnerMute(socketId, micOn ? 1 : 0);
+    }  
+  }
+  function updateLocalCam(camOn) {
+    localStream.current.getTracks().forEach(function(track) {
+      if (track.readyState == 'live' && track.kind === 'video') {
+          track.enabled = camOn;
+      }
+    });
+  }
+
   function addChat(data, isLocal) {
     console.log("chat received ", data, 'is local? ', isLocal);
     setChatMessage({ msg: data, isLocal});
@@ -165,6 +194,8 @@ export default function MusicRoom() {
             key={props.socketId} 
             numberOfVideos={numberOfVideos} 
             updatePeersAudioVolume={updatePeersAudioVolume}
+            updatePeersMute={updatePeersMute}
+            updateLocalCam={updateLocalCam}
           />;
   }
 
@@ -191,6 +222,14 @@ export default function MusicRoom() {
     setCommsOpen(false);
   };
 
+  const handleLoopDrawerOpen = () => {
+    setLoopOpen(true);
+  };
+
+  const handleLoopDrawerClose = () => {
+    setLoopOpen(false);
+  };
+
   return(
     <div > 
         <IconButton
@@ -203,6 +242,15 @@ export default function MusicRoom() {
           <ChatBubbleOutlineIcon />
         </IconButton>
         <IconButton
+          className={classes.loopButton}
+          color="secondary"
+          aria-label="open loop drawer"
+          edge="end"
+          onClick={handleLoopDrawerOpen}
+        >
+          <LoopIcon />
+        </IconButton>
+        <IconButton
           className={classes.audioFXButton}
           color="secondary"
           aria-label="open audio FX drawer"
@@ -213,7 +261,7 @@ export default function MusicRoom() {
         </IconButton>
       <main
         className={clsx(classes.content, {
-          [classes.contentShift]: (audioFXOpen || commsOpen),
+          [classes.contentShift]: (audioFXOpen || commsOpen || loopOpen),
         })}
       >
         <Grid container spacing={3}>
@@ -227,6 +275,11 @@ export default function MusicRoom() {
           updateLocalStreamAudio={updateLocalStreamAudio} 
           handleAudioFXDrawerClose={handleAudioFXDrawerClose} 
           remoteGain={remoteGain}
+          remoteMute={remoteMute}
+        />
+        <LoopDrawer 
+          loopOpen={loopOpen} 
+          handleLoopDrawerClose={handleLoopDrawerClose} 
         />
         <CommsDrawer 
           commsOpen={commsOpen} 

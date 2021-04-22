@@ -59,7 +59,8 @@ export default function AudioFXDrawer({
   stream, 
   updateLocalStreamAudio, 
   handleAudioFXDrawerClose, 
-  remoteGain
+  remoteGain,
+  remoteMute
 }) {
   const classes = useStyles();
   const [monitor, setMonitor] = React.useState<boolean>(false);
@@ -114,7 +115,7 @@ export default function AudioFXDrawer({
       samplesDestination.current = audioCtx.createMediaStreamDestination();
       remoteAudioDestination.current = audioCtx.createMediaStreamDestination();
       remoteAudioGain.current = audioCtx.createGain();
-      remoteAudioGain.current.gain.value = remoteGain;
+      remoteAudioGain.current.gain.value = remoteGain * remoteMute;
       localOutputVolume.current = audioCtx.createGain();
       localOutputVolume.current.gain.value = monitorGain;
       eqToCompressorPassthrough.current = audioCtx.createGain();
@@ -157,9 +158,9 @@ export default function AudioFXDrawer({
 
   useEffect(() => {
     if(remoteAudioGain.current && remoteGain){
-      remoteAudioGain.current.gain.value = remoteGain;
+      remoteAudioGain.current.gain.value = remoteGain * remoteMute;
     }
-  }, [remoteGain]);
+  }, [remoteGain, remoteMute]);
 
   useEffect(() => {
     if(localOutputVolume.current && monitorGain){
