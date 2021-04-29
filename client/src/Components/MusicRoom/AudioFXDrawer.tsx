@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
 import Checkbox from '@material-ui/core/Checkbox';
 import Divider from '@material-ui/core/Divider';
@@ -18,8 +19,10 @@ import Jungle from './webAudio/jungle.js';
 import Reverb from './webAudio/reverb.js';
 import Equalizer from './webAudio/equalizer.js';
 import Compressor from './webAudio/compressor.js';
-import { mixAudioTracks } from './audioUtils.ts';
+import Looper from './webAudio/looper.js';
+import { mixAudioTracks } from './webAudio/utils.ts';
 
+const RECORDING_MAX_TIME_LIMIT = 10000;
 const drawerWidth = 350;
 
 const useStyles = makeStyles((theme) => ({
@@ -27,6 +30,9 @@ const useStyles = makeStyles((theme) => ({
     width: 270,
     align: 'center',
     left: '40px'
+  },
+  nestedCheckbox: {
+    left: '60px',
   },
   switch: {
     align: 'center',
@@ -80,7 +86,16 @@ export default function AudioFXDrawer({
   const [pitchShiftWetGain, setPitchShiftWetGain] = useState(0.99);
   const [pitchShiftDryGain, setPitchShiftDryGain] = useState(0);
   const [samples, setSamples] = useState(false);
-  const [samplesGainValue, setSamplesGainValue] = useState(0);
+  const [samplesGainValue, setSamplesGainValue] = useState(0.25);
+
+  const [loops, setLoops] = useState(false);
+  const [loopsGainValue, setLoopsGainValue] = useState(1);
+  const [newLoopText, setNewLoopText] = useState('New Loop');
+  const [newLoopRecording, setNewLoopRecording] = useState(false);
+  const [loopsToAll, setLoopsToAll] = useState(false);
+  const [overdubbing, setOverdubbing] = useState(false);
+  const [recordLimit, setRecordLimit] = useState(null);
+  const [fxToLooper, setFxToLooper] = useState(true);
 
   const [compressorGain, setCompressorGain] = useState(1.0);
   const [compressorThreshold, setCompressorThreshold] = useState(-50);
@@ -103,16 +118,21 @@ export default function AudioFXDrawer({
   let reverberator = useRef(null);
   let samplesGain = useRef(null);
   let samplesDestination = useRef(null);
+  let looper = useRef(null);
+  let loopsGain = useRef(null);
+  let loopsDestination = useRef(null);
   let remoteAudioGain = useRef(null);
   let remoteAudioDestination = useRef(null);
   let localOutputVolume = useRef(null);
   let eqToCompressorPassthrough = useRef(null);
   let compressorToPitchshiftPassthrough = useRef(null);
   let pitchshiftToReverbPassthrough = useRef(null);
+  let finalEffectsPassthrough = useRef(null);
 
   useEffect(() => {
     if(audioCtx !== null){
       samplesDestination.current = audioCtx.createMediaStreamDestination();
+      loopsDestination.current = audioCtx.createMediaStreamDestination();
       remoteAudioDestination.current = audioCtx.createMediaStreamDestination();
       remoteAudioGain.current = audioCtx.createGain();
       remoteAudioGain.current.gain.value = remoteGain * remoteMute;
@@ -121,10 +141,15 @@ export default function AudioFXDrawer({
       eqToCompressorPassthrough.current = audioCtx.createGain();
       compressorToPitchshiftPassthrough.current = audioCtx.createGain();
       pitchshiftToReverbPassthrough.current = audioCtx.createGain();
+      finalEffectsPassthrough.current = audioCtx.createGain();
       samplesGain.current = audioCtx.createGain();
       samplesGain.current.gain.value = samplesGainValue;
       samplesGain.current.connect(samplesDestination.current);
       samplesGain.current.connect(localOutputVolume.current);
+      loopsGain.current = audioCtx.createGain();
+      loopsGain.current.gain.value = loopsGainValue;
+      loopsGain.current.connect(loopsDestination.current);
+      loopsGain.current.connect(localOutputVolume.current);
       remoteAudioGain.current.connect(remoteAudioDestination.current);
 
       initSamples();
@@ -134,8 +159,9 @@ export default function AudioFXDrawer({
       input.current.connect(eqToCompressorPassthrough.current);
       eqToCompressorPassthrough.current.connect(compressorToPitchshiftPassthrough.current);
       compressorToPitchshiftPassthrough.current.connect(pitchshiftToReverbPassthrough.current);
-      pitchshiftToReverbPassthrough.current.connect(remoteAudioGain.current);
-      pitchshiftToReverbPassthrough.current.connect(localOutputVolume.current);
+      pitchshiftToReverbPassthrough.current.connect(finalEffectsPassthrough.current);
+      finalEffectsPassthrough.current.connect(remoteAudioGain.current);
+      finalEffectsPassthrough.current.connect(localOutputVolume.current);
 
       equalizer.current =  new Equalizer(audioCtx);
       compressor.current = new Compressor(audioCtx);
@@ -147,6 +173,9 @@ export default function AudioFXDrawer({
       reverberator.current.setReverbPreset(reverbPreset);
       reverberator.current.setReverbDryGain(reverbDryGain);
       reverberator.current.setReverbWetGain(reverbWetGain);
+
+      looper.current = new Looper(audioCtx, createLoopControl, updateNewLoopText);
+      finalEffectsPassthrough.current.connect(looper.current.input);
 
       var originalTrack = stream.getAudioTracks()[0];
       stream.removeTrack(originalTrack);
@@ -174,7 +203,7 @@ export default function AudioFXDrawer({
         localOutputVolume.current.connect(audioCtx.destination);
       }
       else {
-        localOutputVolume.current.disconnect();
+        localOutputVolume.current.disconnect(audioCtx.destination);
       }
     }
     
@@ -237,18 +266,14 @@ export default function AudioFXDrawer({
   useEffect(() => {
     if (reverberator.current){
       if(reverb) {
-        pitchshiftToReverbPassthrough.current.disconnect(remoteAudioGain.current);
-        pitchshiftToReverbPassthrough.current.disconnect(localOutputVolume.current);
+        pitchshiftToReverbPassthrough.current.disconnect(finalEffectsPassthrough.current);
         pitchshiftToReverbPassthrough.current.connect(reverberator.current.input);
-        reverberator.current.output.connect(remoteAudioGain.current);
-        reverberator.current.output.connect(localOutputVolume.current);
+        reverberator.current.output.connect(finalEffectsPassthrough.current);
       }
       else {
         pitchshiftToReverbPassthrough.current.disconnect(reverberator.current.input);
-        reverberator.current.output.disconnect(remoteAudioGain.current);
-        reverberator.current.output.disconnect(localOutputVolume.current);
-        pitchshiftToReverbPassthrough.current.connect(remoteAudioGain.current);
-        pitchshiftToReverbPassthrough.current.connect(localOutputVolume.current);
+        reverberator.current.output.disconnect(finalEffectsPassthrough.current);
+        pitchshiftToReverbPassthrough.current.connect(finalEffectsPassthrough.current);
       }
     }
   }, [reverb]);
@@ -359,6 +384,23 @@ export default function AudioFXDrawer({
     }
   }, [samplesGainValue]);
 
+  useEffect(() => {
+    if(loopsGain.current){
+      loopsGain.current.gain.value = loopsGainValue;
+    }
+  }, [loopsGainValue]);
+
+  useEffect(() => {
+    if (looper.current){
+      if(loops) {
+        looper.current.output.connect(loopsGain.current);
+      }
+      else {
+        looper.current.output.disconnect(loopsGain.current);
+      }
+    }
+  }, [loops]);
+
   async function initSamples() {
     await loadSound('audio/laugh.wav', 'laugh');
     await loadSound('audio/horn.wav', 'horn');
@@ -426,6 +468,60 @@ export default function AudioFXDrawer({
           hornSound.connect(samplesGain.current);
           hornSound.start(0);
       }
+  }
+
+  function newLoop() {
+    console.log("recordLimit", recordLimit);
+    if(!newLoopRecording){
+      if(!overdubbing){
+        console.log('starting new loop recording');
+        setNewLoopText('Recording... Press to Stop');
+        setNewLoopRecording(true);
+        looper.current.recordNewLoop();
+
+        setRecordLimit(setTimeout(function(){
+          console.log("in set timeout")
+          stopRecordingNewLoop();
+        }, RECORDING_MAX_TIME_LIMIT ));
+        console.log('record limit ', recordLimit);
+
+      }
+      else {
+        setNewLoopText('Waiting for downbeat...');
+        looper.current.addOverdub();
+      }
+    }
+    else {
+      console.log('manually stopped recording');
+      clearTimeout(recordLimit);
+      stopRecordingNewLoop();
+    }
+  }
+  function stopRecordingNewLoop() {
+    console.log("stopping recording");
+    setNewLoopText('Push to Overdub');
+    setOverdubbing(true);
+    setNewLoopRecording(false);
+    looper.current.getNewLoopAndPlay();
+  }
+  function loopOverdub() {
+    looper.current.addOverdub();
+  }  
+  function loopPlay() {
+    looper.current.play();
+  }  
+  function loopStop() {
+    looper.current.stop();
+  }  
+  function loopErase() {
+    looper.current.clearAll();
+    setOverdubbing(false);
+    setNewLoopRecording(false);
+    setNewLoopText('New Loop');
+  }  
+
+  function updateNewLoopText(buttonText) {
+    setNewLoopText(buttonText);
   }
 
   const handleMonitorCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -524,6 +620,40 @@ export default function AudioFXDrawer({
   const handleSamplesGainChange = (event: any, newValue: number | number[]) => {
     setSamplesGainValue(newValue as number);
   };
+
+  const handleLoopsCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLoops(event.target.checked);
+  };
+
+  const handleLoopsGainChange = (event: any, newValue: number | number[]) => {
+    setLoopsGainValue(newValue as number);
+  };
+
+  const handleLoopsToAllCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLoopsToAll(event.target.checked);
+    if(event.target.checked){
+      loopsGain.current.connect(remoteAudioDestination.current);
+    }
+    else{
+      loopsGain.current.disconnect(remoteAudioDestination.current);
+    }
+  };
+
+  const handleFXToLooperCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFxToLooper(event.target.checked);
+    if(event.target.checked){
+      input.current.disconnect(looper.current.input);
+      finalEffectsPassthrough.current.connect(looper.current.input);
+    }
+    else{
+      finalEffectsPassthrough.current.disconnect(looper.current.input);
+      input.current.connect(looper.current.input);
+    }
+  };
+
+  const createLoopControl = (loopId) => {
+    console.log('creating loop control for loopId: ', loopId);
+  }
 
   return(
     <div > 
@@ -868,6 +998,7 @@ export default function AudioFXDrawer({
             step={0.00000001}
             aria-labelledby="samples-gain"
           /> 
+          <Box spacing={2}>
             <Button variant="outlined" id='laugh' onClick={laugh}>
               Laugh
             </Button>
@@ -880,10 +1011,76 @@ export default function AudioFXDrawer({
             <Button variant="outlined" id='whistle' onClick={whistle}>
               Whistle
             </Button>
+          </Box>
+          </div>
+        }
+        <FormGroup row>
+          <FormControlLabel
+            control={   
+              <Checkbox
+                checked={loops}
+                onChange={handleLoopsCheckbox}
+                color="secondary"
+              /> 
+            }
+            label='Looper'
+          />
+        </FormGroup> 
+        { loops && <div>
+          <Box paddingLeft={2} marginLeft={2} className={classes.nestedCheckbox}>
+            <FormControlLabel
+              control={   
+                <Checkbox
+                  checked={fxToLooper}
+                  onChange={handleFXToLooperCheckbox}
+                  color="secondary"
+                /> 
+              }
+              label='FX->Looper (on) / No FX (off)'
+            />
+          </Box>
+          <Box paddingLeft={2} marginLeft={2} className={classes.nestedCheckbox}>
+            <FormControlLabel
+              control={   
+                <Checkbox
+                  checked={loopsToAll}
+                  onChange={handleLoopsToAllCheckbox}
+                  color="secondary"
+                /> 
+              }
+              label='Send-to-all (on) / Preview (off)'
+            />
+          </Box>
+          <Typography id="loops-gain" gutterBottom>
+            Volume
+          </Typography>
+          <Slider 
+            className={classes.slider}
+            padding={3} 
+            value={loopsGainValue} 
+            onChange={handleLoopsGainChange}
+            max={1.0} 
+            step={0.00000001}
+            aria-labelledby="loops-gain"
+          /> 
+          <Box spacing={2}>
+            <Button variant="outlined" id='newLoop' onClick={newLoop}>
+              {newLoopText}
+            </Button><br/><br/>  
+            <Button variant="outlined" id='loopStop' onClick={loopStop}>
+              Stop Loops
+            </Button><br/><br/>
+            <Button variant="outlined" id='loopPlay' onClick={loopPlay}>
+              Play Loops
+            </Button><br/><br/>
+            <Button variant="outlined" id='loopErase' onClick={loopErase}>
+              Erase Loops
+            </Button><br/><br/>
+          </Box>
           </div>
         }
         </div>
-        </Drawer>
+      </Drawer>
     </div>
   );
 }

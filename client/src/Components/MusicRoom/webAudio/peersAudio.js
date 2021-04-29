@@ -10,7 +10,6 @@ export default function PeersAudio(context) {
 }
 
 PeersAudio.prototype.addPartner = function(partnerName, partnerStream) {
-    console.log('partnerName ', partnerName);
     let partnerAudio = this.context.createMediaStreamSource(partnerStream);
     this.partnerGains[partnerName] = this.context.createGain();
     this.partnerGainValues[partnerName] = {
@@ -25,7 +24,6 @@ PeersAudio.prototype.addPartner = function(partnerName, partnerStream) {
 PeersAudio.prototype.removePartner = function(partnerName) {
     delete this.partnerGains[partnerName];
     delete this.partnerGainValues[partnerName];
-    console.log("partner gains post delete ", this.partnerGains);
 }
 
 PeersAudio.prototype.updatePartnerGain = function(partnerName, gainVal) {

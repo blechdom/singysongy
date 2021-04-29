@@ -12,8 +12,6 @@ import SocketsAndPeers from './SocketsAndPeers';
 import { USER_MEDIA_CONSTRAINTS } from './constants';
 import VideoCard from './VideoCard';
 import AudioFXDrawer from './AudioFXDrawer';
-import CommsDrawer from './CommsDrawer';
-import LoopDrawer from './LoopDrawer';
 import PeersAudio from './webAudio/peersAudio.js';
 
 const drawerWidth = 350;
@@ -214,42 +212,8 @@ export default function MusicRoom() {
     setAudioFXOpen(false);
   };
 
-  const handleCommsDrawerOpen = () => {
-    setCommsOpen(true);
-  };
-
-  const handleCommsDrawerClose = () => {
-    setCommsOpen(false);
-  };
-
-  const handleLoopDrawerOpen = () => {
-    setLoopOpen(true);
-  };
-
-  const handleLoopDrawerClose = () => {
-    setLoopOpen(false);
-  };
-
   return(
     <div > 
-        <IconButton
-          className={classes.commsButton}
-          color="secondary"
-          aria-label="open comms drawer"
-          edge="end"
-          onClick={handleCommsDrawerOpen}
-        >
-          <ChatBubbleOutlineIcon />
-        </IconButton>
-        <IconButton
-          className={classes.loopButton}
-          color="secondary"
-          aria-label="open loop drawer"
-          edge="end"
-          onClick={handleLoopDrawerOpen}
-        >
-          <LoopIcon />
-        </IconButton>
         <IconButton
           className={classes.audioFXButton}
           color="secondary"
@@ -276,15 +240,6 @@ export default function MusicRoom() {
           handleAudioFXDrawerClose={handleAudioFXDrawerClose} 
           remoteGain={remoteGain}
           remoteMute={remoteMute}
-        />
-        <LoopDrawer 
-          loopOpen={loopOpen} 
-          handleLoopDrawerClose={handleLoopDrawerClose} 
-        />
-        <CommsDrawer 
-          commsOpen={commsOpen} 
-          handleCommsDrawerClose={handleCommsDrawerClose} 
-          chatMessage={chatMessage}
         />
         {socketComponent}
     </div>

@@ -2,32 +2,27 @@
 export default function Reverb(context) {
 
     this.context = context;
-    let input = context.createGain();
-    let output = context.createGain();
-    this.input = input;
-    this.output = output;
+    this.input = context.createGain();
+    this.output = context.createGain();
 
-    const reverbGain = context.createGain();
-    this.reverb_gain = reverbGain;
-    this.reverb_gain.gain.value = 0.0;
-    const dryReverbGain = context.createGain();
-    this.dry_reverb_gain = dryReverbGain;
-    this.dry_reverb_gain.gain.value = 0.0;
-    let convolver = context.createConvolver();
-    this.convolver_node = convolver;
+    this.reverbGain = context.createGain();
+    this.reverbGain.gain.value = 0.0;
+    this.dryReverbGain = context.createGain();
+    this.dryReverbGain.gain.value = 0.0;
+    this.convolverNode = context.createConvolver();
 
-    input.connect(dryReverbGain);
-    input.connect(convolver);
-    dryReverbGain.connect(output);
-    reverbGain.connect(output);
+    this.input.connect(this.dryReverbGain);
+    this.input.connect(this.convolverNode);
+    this.dryReverbGain.connect(this.output);
+    this.reverbGain.connect(this.output);
 }
 
 Reverb.prototype.setReverbDryGain = function(gainValue) {
-    this.dry_reverb_gain.gain.value = gainValue;
+    this.dryReverbGain.gain.value = gainValue;
 }
 
 Reverb.prototype.setReverbWetGain = function(gainValue) {
-    this.reverb_gain.gain.value = gainValue;
+    this.reverbGain.gain.value = gainValue;
 }
 
 Reverb.prototype.setReverbPreset = async function(reverbPreset) {
@@ -35,7 +30,7 @@ Reverb.prototype.setReverbPreset = async function(reverbPreset) {
     const response = await fetch(revPreset);
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
-    this.convolver_node.buffer = audioBuffer; // impulseResponse( 2.5, 2.0 );  // reverbBuffer;
-    this.convolver_node.connect(this.reverb_gain); 
+    this.convolverNode.buffer = audioBuffer; // impulseResponse( 2.5, 2.0 );  // reverbBuffer;
+    this.convolverNode.connect(this.reverbGain); 
 }
 
