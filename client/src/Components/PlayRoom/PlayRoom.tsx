@@ -1,25 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
-import clsx from 'clsx';
 import { makeStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
+import Box from '@material-ui/core/Box';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
-import IconButton from '@material-ui/core/IconButton';
-import RecordVoiceOverIcon from '@material-ui/icons/RecordVoiceOver';
-import ChatBubbleOutlineIcon from '@material-ui/icons/ChatBubbleOutline';
-import MusicNoteIcon from '@material-ui/icons/MusicNote';
-import LoopIcon from '@material-ui/icons/Loop';
+import TextField from '@material-ui/core/TextField';
 import SocketsAndPeers from './SocketsAndPeers';
 import { USER_MEDIA_CONSTRAINTS } from './constants';
 import VideoCard from './VideoCard';
-import AudioFXDrawer from './AudioFXDrawer';
+import AudioFX from './AudioFX';
 import PeersAudio from './webAudio/peersAudio.js';
 
-const drawerWidth = 350;
-
 const useStyles = makeStyles((theme) => ({
+  exitButton: {
+    position: 'absolute',
+    right: '20px',
+    top: '10px', 
+  },
   audioFXButton: {
     position: 'absolute',
     right: '20px',
+    top: '10px', 
+  },
+  musicRoomTitle: {
+    position: 'absolute',
+    left: '10px',
     top: '10px', 
   },
   loopButton: {
@@ -47,51 +52,36 @@ const useStyles = makeStyles((theme) => ({
     align: 'center',
     left: '40px'
   },
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginRight: 0,
-  },
-  contentShift: {
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginRight: +drawerWidth,
-  },
 }));
 
-export default function MusicRoom() {
+export default function PlayRoom() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
 
   const classes = useStyles();
 
-  const [audioFXOpen, setAudioFXOpen] = React.useState<boolean>(false);
-  const [commsOpen, setCommsOpen] = React.useState<boolean>(false);
-  const [loopOpen, setLoopOpen] = React.useState<boolean>(false);
   const [videoList, setVideoList] = React.useState([]);
   const [socketComponent, setSocketComponent] = React.useState([]);
   const [audioCtx, setAudioCtx] = useState(null);
   const [chatMessage, setChatMessage] = useState(null);
   const [remoteGain, setRemoteGain] = useState(1.0);
   const [remoteMute, setRemoteMute] = useState(1);
+  const [roomName, setRoomName] = useState(null);
+  const [roomNameSubmitted, setRoomNameSubmitted] = useState(false);
 
   let localStream = useRef(null);
   let mediaStream = useRef(null);
   let peersAudio = useRef(null);
 
   useEffect(() => {
-    if(audioCtx === null){
-      setAudioCtx(new AudioContext());
+    if(roomNameSubmitted){
+      if(audioCtx === null){
+        setAudioCtx(new AudioContext());
+      }
+      return () => { 
+        setAudioCtx(null);
+      };
     }
-    return () => { 
-      setAudioCtx(null);
-    };
-  }, []);
+  }, [roomNameSubmitted]);
 
   useEffect(() => {
     if(audioCtx !== null){
@@ -138,6 +128,7 @@ export default function MusicRoom() {
         handleVideoListRemove={handleVideoListRemove} 
         localStream={localStream.current} 
         addChat={addChat} 
+        roomName={'play-' + roomName}
       />
     )
   }
@@ -148,12 +139,12 @@ export default function MusicRoom() {
     peersAudio.current.addPartner(videoProps.socketId, videoProps.src);
   }
 
-  function handleVideoListRemove(socketId) {
+  function handleVideoListRemove(socketId: string) {
     setVideoList(currentList => currentList.filter((remoteVid) => remoteVid.socketId !== socketId));
     peersAudio.current.removePartner(socketId);
   }
 
-  function updatePeersAudioVolume(socketId, gainVal) {
+  function updatePeersAudioVolume(socketId: string, gainVal: number) {
     if(socketId === 'local'){
       setRemoteGain(gainVal);
     }
@@ -163,7 +154,7 @@ export default function MusicRoom() {
     }  
   }
 
-  function updatePeersMute(socketId, micOn) {
+  function updatePeersMute(socketId: string, micOn: boolean) {
     if(socketId === 'local'){
       setRemoteMute(micOn ? 1 : 0);
     }
@@ -172,7 +163,7 @@ export default function MusicRoom() {
       peersAudio.current.updatePartnerMute(socketId, micOn ? 1 : 0);
     }  
   }
-  function updateLocalCam(camOn) {
+  function updateLocalCam(camOn: boolean) {
     localStream.current.getTracks().forEach(function(track) {
       if (track.readyState == 'live' && track.kind === 'video') {
           track.enabled = camOn;
@@ -180,12 +171,12 @@ export default function MusicRoom() {
     });
   }
 
-  function addChat(data, isLocal) {
+  function addChat(data, isLocal: boolean) {
     console.log("chat received ", data, 'is local? ', isLocal);
     setChatMessage({ msg: data, isLocal});
   }
 
-  function createVideo(props, numberOfVideos) {
+  function createVideo(props, numberOfVideos: number) {
     return <VideoCard 
             srcObject={props.src} 
             socketId={props.socketId} 
@@ -204,44 +195,60 @@ export default function MusicRoom() {
       });
   }
 
-  const handleAudioFXDrawerOpen = () => {
-    setAudioFXOpen(true);
-  };
-
-  const handleAudioFXDrawerClose = () => {
-    setAudioFXOpen(false);
-  };
+  const handleRoomNameChange = (e) => {
+    setRoomName(e.target.value);
+  }
+  const submitRoomName = () => {
+    let response = window.confirm(`WARNING: Headphones Required! The audio settting do not protect against feedback!`);
+    if (response) {
+      if(roomName != null){
+        setRoomNameSubmitted(true);
+      }
+      else{
+        alert('room name required to join');
+      }
+    }  
+  }
 
   return(
     <div > 
-        <IconButton
-          className={classes.audioFXButton}
-          color="secondary"
-          aria-label="open audio FX drawer"
-          edge="end"
-          onClick={handleAudioFXDrawerOpen}
+      { !roomNameSubmitted && <div>
+        <Box
+          display="flex" 
+          width='100%' height='100%'
         >
-          <RecordVoiceOverIcon />
-        </IconButton>
-      <main
-        className={clsx(classes.content, {
-          [classes.contentShift]: (audioFXOpen || commsOpen || loopOpen),
-        })}
-      >
+        <Box m='auto' pt='100px'>       
+            <Typography variant='h2'>Singy Songy Play Room</Typography><br/>
+            <Typography variant='h6'>Create a Room or Join an Existing Room by Typing the Name Below!</Typography> <br/><br/>    
+            <Typography variant='h6' color='Secondary'>Headphones Required!</Typography> <br/><br/>     
+            <TextField id="music-room-name" label="Room Name" variant="outlined" onChange={handleRoomNameChange}/><br/><br/>
+            <Button variant='contained' color="secondary" onClick={submitRoomName}>Join!</Button>
+          </Box>
+        </Box>
+        </div>
+      }
+      { roomNameSubmitted && <div> 
+        <Box
+          display="flex" 
+          width='100%' height='100%'
+        >
+          <Box m='auto' pt={6}> 
+            <Typography variant='h6' className={classes.roomTitle}>Room: {roomName}</Typography>
+          </Box>
+        </Box>
         <Grid container spacing={3}>
           {createVideos()}
         </Grid>
-      </main>
-        <AudioFXDrawer 
-          audioFXOpen={audioFXOpen} 
+        <AudioFX
           audioCtx={audioCtx} 
           stream={mediaStream.current} 
           updateLocalStreamAudio={updateLocalStreamAudio} 
-          handleAudioFXDrawerClose={handleAudioFXDrawerClose} 
           remoteGain={remoteGain}
           remoteMute={remoteMute}
         />
         {socketComponent}
+        </div> 
+      } 
     </div>
   );
 }

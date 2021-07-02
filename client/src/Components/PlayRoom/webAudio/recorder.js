@@ -5,8 +5,7 @@ export default function Recorder(source, cfg) {
   let bufferLen = 4096;
   this.context = source.context;
   this.node = (this.context.createScriptProcessor ||
-                this.context.createJavaScriptNode).call(this.context,
-                                                        bufferLen, 2, 2);
+    this.context.createJavaScriptNode).call(this.context, bufferLen, 2, 2);
   let worker = new WebWorker(RecorderWorker);
   worker.postMessage({
     command: 'init',

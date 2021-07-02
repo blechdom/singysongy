@@ -26,11 +26,17 @@ export default function Home() {
     <div className="Home">
       <header className="Home-header">
         <h1>
-          SingySongy
+          Singy Songy
         </h1>
         <List component="nav" className={classes.root} aria-label="contacts">
-          <ListItem button component={Link} to="/musicRoom">
-            <ListItemText secondary="Default Singy Songy Room - USE HEADPHONES!" />
+          <ListItem button component={Link} to="/videoChat">
+            <ListItemText secondary="Join Video Chat Room" />
+          </ListItem>
+          <ListItem button component={Link} to="/playRoom">
+            <ListItemText secondary="Join Play Room" />
+          </ListItem>
+          <ListItem button component={Link} to="/radioFeed">
+            <ListItemText secondary="Radio Feed (coming soon)" />
           </ListItem>
         </List>
       </header>

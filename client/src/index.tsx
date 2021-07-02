@@ -6,6 +6,9 @@ import App from './Components/App/App';
 import { BrowserRouter } from "react-router-dom";
 import reportWebVitals from './reportWebVitals';
 import * as serviceWorker from './serviceWorker';
+import '@fontsource/roboto';
+
+const font =  "'Comfortaa', sans-serif";
 
 const theme = createMuiTheme({
   shadows: ["none"],
@@ -31,9 +34,9 @@ const theme = createMuiTheme({
     } 
   },
   typography: {
-    fontFamily: 'Roboto',
+    fontFamily: font,
   },
-  fontFamily: 'Roboto',
+  fontFamily: font,
 });
 
 ReactDOM.render(

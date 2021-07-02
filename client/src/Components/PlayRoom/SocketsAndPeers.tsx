@@ -5,7 +5,7 @@ import { ICE_CONFIGURATION, SOCKET_URL } from './constants';
 
 let thisSocket = null;
 
-export default function SocketsAndPeers({localStream, handleVideoListAdd, handleVideoListRemove, addChat}) {
+export default function SocketsAndPeers({localStream, handleVideoListAdd, handleVideoListRemove, addChat, roomName}) {
   
   const socket = io(SOCKET_URL);
   thisSocket = socket;
@@ -22,7 +22,7 @@ export default function SocketsAndPeers({localStream, handleVideoListAdd, handle
     console.log('init sockets and peers');
     socket.on('connect', () => {
       console.log('I AM ', socket.id);
-      socket.emit('subscribe', { room: 'default', socketId: socket.id });
+      socket.emit('subscribe', { room: roomName, socketId: socket.id });
     });
   
     socket.on('initReceive', socket_id => {
@@ -96,7 +96,7 @@ export const sendMessage = function(msg){
   if (thisSocket != null){
     console.log('sending chat ', msg);
     let data = {
-			room: 'default',
+			room: roomName,
 			msg: msg,
 			sender: 'test'
     };

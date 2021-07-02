@@ -13,7 +13,10 @@ import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 
 import Home from "../Home/Home";
-import MusicRoom from "../MusicRoom/MusicRoom";
+import VideoChat from "../VideoChat/VideoChat";
+import PlayRoom from "../PlayRoom/PlayRoom";
+
+import RadioFeed from "../RadioFeed/RadioFeed";
 import '../App/App.css';
 
 const drawerWidth = 240;
@@ -88,14 +91,22 @@ function ToolBarInteraction({ classes, variant }) {
             <ListItem button component={Link} to="/" onClick={onItemClick('Home')}>
               <ListItemText>Home</ListItemText>
             </ListItem>
-            <ListItem button component={Link} to="/musicRoom" onClick={onItemClick('Singy Songy Default Room')}>
-              <ListItemText>Singy Songy Default Room</ListItemText>
+            <ListItem button component={Link} to="/videoChat" onClick={onItemClick('Video Chat')}>
+              <ListItemText>Video Chat</ListItemText>
+            </ListItem>
+            <ListItem button component={Link} to="/playRoom" onClick={onItemClick('Play Room')}>
+              <ListItemText>Play Room</ListItemText>
+            </ListItem>
+            <ListItem button component={Link} to="/radioFeed" onClick={onItemClick('Radio Feed')}>
+              <ListItemText>Radio Feed</ListItemText>
             </ListItem>
           </List>
         </Drawer>
         <main className={classes.content}>
             <Route exact path="/" component={Home} />
-            <Route path="/musicRoom" component={MusicRoom} />
+            <Route path="/videoChat" component={VideoChat} />
+            <Route path="/playRoom" component={PlayRoom} />
+            <Route path="/radioFeed" component={RadioFeed} />
         </main>
       </Router>
     </div>

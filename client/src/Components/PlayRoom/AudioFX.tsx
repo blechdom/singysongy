@@ -10,9 +10,6 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import Typography from '@material-ui/core/Typography';
-import Drawer from '@material-ui/core/Drawer';
-import ChevronRight from '@material-ui/icons/ChevronRight';
-import IconButton from '@material-ui/core/IconButton';
 import Slider from '@material-ui/core/Slider';
 import { REVERB_PRESET_LIST } from './constants';
 import Jungle from './webAudio/jungle.js';
@@ -20,10 +17,9 @@ import Reverb from './webAudio/reverb.js';
 import Equalizer from './webAudio/equalizer.js';
 import Compressor from './webAudio/compressor.js';
 import Looper from './webAudio/looper.js';
-import { mixAudioTracks } from './webAudio/utils.ts';
+import { mixAudioTracks } from './webAudio/utils';
 
 const RECORDING_MAX_TIME_LIMIT = 10000;
-const drawerWidth = 350;
 
 const useStyles = makeStyles((theme) => ({
   slider: {
@@ -37,13 +33,6 @@ const useStyles = makeStyles((theme) => ({
   switch: {
     align: 'center',
     left: '40px'
-  },
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
   },
   drawerHeader: {
     display: 'flex',
@@ -59,12 +48,10 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function AudioFXDrawer({ 
-  audioFXOpen, 
+export default function AudioFX({ 
   audioCtx, 
   stream, 
   updateLocalStreamAudio, 
-  handleAudioFXDrawerClose, 
   remoteGain,
   remoteMute
 }) {
@@ -657,19 +644,7 @@ export default function AudioFXDrawer({
 
   return(
     <div > 
-      <Drawer
-        className={classes.drawer}
-        variant="persistent"
-        anchor="right"
-        open={audioFXOpen}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
         <div className={classes.drawerHeader}>
-          <IconButton onClick={handleAudioFXDrawerClose}>
-            <ChevronRight />
-          </IconButton>
           <h1>AUDIO</h1>
         </div>
         <Divider />
@@ -1080,7 +1055,6 @@ export default function AudioFXDrawer({
           </div>
         }
         </div>
-      </Drawer>
     </div>
   );
 }
