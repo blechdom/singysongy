@@ -10,17 +10,20 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import Typography from '@material-ui/core/Typography';
+import Drawer from '@material-ui/core/Drawer';
+import ChevronRight from '@material-ui/icons/ChevronRight';
+import IconButton from '@material-ui/core/IconButton';
 import Slider from '@material-ui/core/Slider';
 import { REVERB_PRESET_LIST } from './constants';
-import Router from './webAudio/router.js';
 import Jungle from './webAudio/jungle.js';
 import Reverb from './webAudio/reverb.js';
 import Equalizer from './webAudio/equalizer.js';
 import Compressor from './webAudio/compressor.js';
 import Looper from './webAudio/looper.js';
-import { mixAudioTracks } from './webAudio/utils';
+import { mixAudioTracks } from './webAudio/utils.ts';
 
 const RECORDING_MAX_TIME_LIMIT = 10000;
+const drawerWidth = 350;
 
 const useStyles = makeStyles((theme) => ({
   slider: {
@@ -34,6 +37,13 @@ const useStyles = makeStyles((theme) => ({
   switch: {
     align: 'center',
     left: '40px'
+  },
+  drawer: {
+    width: drawerWidth,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: drawerWidth,
   },
   drawerHeader: {
     display: 'flex',
@@ -49,10 +59,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function AudioFX({ 
+export default function AudioFXDrawer({ 
+  audioFXOpen, 
   audioCtx, 
   stream, 
   updateLocalStreamAudio, 
+  handleAudioFXDrawerClose, 
   remoteGain,
   remoteMute
 }) {
@@ -79,6 +91,7 @@ export default function AudioFX({
   const [loops, setLoops] = useState(false);
   const [loopsGainValue, setLoopsGainValue] = useState(1);
   const [newLoopText, setNewLoopText] = useState('New Loop');
+  const [newLoopDisabled, setNewLoopDisabled] = useState(false);
   const [newLoopRecording, setNewLoopRecording] = useState(false);
   const [loopsToAll, setLoopsToAll] = useState(false);
   const [overdubbing, setOverdubbing] = useState(false);
@@ -389,11 +402,22 @@ export default function AudioFX({
     }
   }, [loops]);
 
+  useEffect(() => {
+    if((newLoopText === 'Overdubbing Now... Will Auto-Stop') || (newLoopText === 'Waiting for downbeat...' ))
+    {
+      console.log('disable button');
+      setNewLoopDisabled(true);
+    }
+    else{
+      setNewLoopDisabled(false);
+    }
+  }, [newLoopText]);
+
   async function initSamples() {
-    await loadSound('audio/laugh.wav', 'laugh');
-    await loadSound('audio/horn.wav', 'horn');
-    await loadSound('audio/whistle.wav', 'whistle');
-    await loadSound('audio/nooo.wav', 'nooo');
+    await loadSound('https://www.aivxdemos.com/musicRoom/audio/laugh.wav', 'laugh');
+    await loadSound('https://www.aivxdemos.com/musicRoom/audio/horn.wav', 'horn');
+    await loadSound('https://www.aivxdemos.com/musicRoom/audio/whistle.wav', 'whistle');
+    await loadSound('https://www.aivxdemos.com/musicRoom/audio/nooo.wav', 'nooo');
   }
 
   function loadSound(url, soundName) {
@@ -645,7 +669,19 @@ export default function AudioFX({
 
   return(
     <div > 
+      <Drawer
+        className={classes.drawer}
+        variant="persistent"
+        anchor="right"
+        open={audioFXOpen}
+        classes={{
+          paper: classes.drawerPaper,
+        }}
+      >
         <div className={classes.drawerHeader}>
+          <IconButton onClick={handleAudioFXDrawerClose}>
+            <ChevronRight />
+          </IconButton>
           <h1>AUDIO</h1>
         </div>
         <Divider />
@@ -1040,7 +1076,7 @@ export default function AudioFX({
             aria-labelledby="loops-gain"
           /> 
           <Box spacing={2}>
-            <Button variant="outlined" id='newLoop' onClick={newLoop}>
+            <Button variant="outlined" id='newLoop' onClick={newLoop} disabled={newLoopDisabled}>
               {newLoopText}
             </Button><br/><br/>  
             <Button variant="outlined" id='loopStop' onClick={loopStop}>
@@ -1056,6 +1092,7 @@ export default function AudioFX({
           </div>
         }
         </div>
+      </Drawer>
     </div>
   );
 }

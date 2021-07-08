@@ -35,6 +35,9 @@ export default function Home() {
           <ListItem button component={Link} to="/playRoom">
             <ListItemText secondary="Join Play Room" />
           </ListItem>
+          <ListItem button component={Link} to="/musicRoom">
+            <ListItemText secondary="Join Music Room" />
+          </ListItem>
           <ListItem button component={Link} to="/radioFeed">
             <ListItemText secondary="Radio Feed (coming soon)" />
           </ListItem>

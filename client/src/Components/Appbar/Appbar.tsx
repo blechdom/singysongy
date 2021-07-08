@@ -15,6 +15,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import Home from "../Home/Home";
 import VideoChat from "../VideoChat/VideoChat";
 import PlayRoom from "../PlayRoom/PlayRoom";
+import MusicRoom from "../PlayRoom/MusicRoom";
 
 import RadioFeed from "../RadioFeed/RadioFeed";
 import '../App/App.css';
@@ -97,6 +98,9 @@ function ToolBarInteraction({ classes, variant }) {
             <ListItem button component={Link} to="/playRoom" onClick={onItemClick('Play Room')}>
               <ListItemText>Play Room</ListItemText>
             </ListItem>
+            <ListItem button component={Link} to="/musicRoom" onClick={onItemClick('Music Room')}>
+              <ListItemText>Music Room</ListItemText>
+            </ListItem>
             <ListItem button component={Link} to="/radioFeed" onClick={onItemClick('Radio Feed')}>
               <ListItemText>Radio Feed</ListItemText>
             </ListItem>
@@ -106,6 +110,7 @@ function ToolBarInteraction({ classes, variant }) {
             <Route exact path="/" component={Home} />
             <Route path="/videoChat" component={VideoChat} />
             <Route path="/playRoom" component={PlayRoom} />
+            <Route path="/musicRoom" component={MusicRoom} />
             <Route path="/radioFeed" component={RadioFeed} />
         </main>
       </Router>
